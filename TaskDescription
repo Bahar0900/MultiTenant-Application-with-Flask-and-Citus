@@ -1,0 +1,2 @@
+7. Design and implement a scalable multi-tenant application using Flask and Citus (distributed PostgreSQL). Your solution should demonstrate proper sharding strategies, efficient schema design for tenant isolation, and optimized query patterns. How would you structure your database tables for distribution across Citus nodes, handle cross-shard queries, and ensure tenant data remains properly isolated while maintaining performance? Include considerations for SQLAlchemy integration with distributed tables and monitoring shard activity.
+

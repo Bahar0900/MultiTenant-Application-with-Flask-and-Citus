@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1>Welcome, {{ name }}!</h1>
+<p>This is your dashboard. You can view and add notes from here.</p>
+<div class="actions">
+    <a href="{{ url_for('routes.notes') }}" class="btn">View My Notes</a>
+    <a href="{{ url_for('routes.notes') }}" class="btn">Add New Note</a>
+</div>
+{% endblock %}

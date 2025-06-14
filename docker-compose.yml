@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  citus-master:
+    image: citusdata/citus:11.2
+    environment:
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_HOST_AUTH_METHOD: trust
+      PGSSLMODE: disable
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - citus-master-data:/var/lib/postgresql/data
+      - ./master-init:/docker-entrypoint-initdb.d
+    command: >
+      postgres 
+      -c config_file=/etc/postgresql/postgresql.conf
+      -c ssl=off
+      -c shared_preload_libraries=citus
+    networks:
+      - citus-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  citus-worker:
+    image: citusdata/citus:11.2
+    environment:
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_HOST_AUTH_METHOD: trust
+      PGSSLMODE: disable
+    depends_on:
+      citus-master:
+        condition: service_healthy
+    volumes:
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - citus-worker-data:/var/lib/postgresql/data
+      - ./worker-init:/docker-entrypoint-initdb.d
+    networks:
+      - citus-network
+    command: >
+      postgres 
+      -c config_file=/etc/postgresql/postgresql.conf
+      -c ssl=off
+      -c shared_preload_libraries=citus
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cluster-init:
+    image: citusdata/citus:11.2
+    depends_on:
+      citus-master:
+        condition: service_healthy
+      citus-worker:
+        condition: service_healthy
+    entrypoint: ["/docker-entrypoint-initdb.d/init-cluster.sh"]
+    environment:
+      POSTGRES_PASSWORD: mysecretpassword
+      PGHOST: citus-master
+      PGUSER: postgres
+      PGPASSWORD: mysecretpassword
+      PGSSLMODE: disable
+    networks:
+      - citus-network
+    volumes:
+      - ./init-scripts/init-cluster.sh:/docker-entrypoint-initdb.d/init-cluster.sh:ro
+
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    depends_on:
+      citus-master:
+        condition: service_healthy
+    environment:
+      FLASK_ENV: development
+      DATABASE_URL: postgresql://postgres:mysecretpassword@citus-master:5432/postgres?sslmode=disable
+      POSTGRES_PASSWORD: mysecretpassword
+    volumes:
+      - .:/app
+    networks:
+      - citus-network
+    command: >
+      bash -c "/wait-for-db.sh citus-master && flask run --host 0.0.0.0 --port 5000"
+
+networks:
+  citus-network:
+
+volumes:
+  citus-master-data:
+  citus-worker-data:

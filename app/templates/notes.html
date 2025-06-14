@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}My Notes{% endblock %}
+
+{% block content %}
+<h1>My Notes</h1>
+
+<div class="note-form">
+    <h2>Add New Note</h2>
+    <form method="POST">
+        <div class="form-group">
+            <textarea name="content" rows="4" required></textarea>
+        </div>
+        <button type="submit" class="btn">Save Note</button>
+    </form>
+</div>
+
+<div class="notes-list">
+    <h2>Your Notes</h2>
+    {% if notes %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Content</th>
+                    <th>Created At</th>
+                    <th>Updated At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for note in notes %}
+                <tr>
+                    <td>{{ note.content }}</td>
+                    <td>{{ note.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ note.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>You don't have any notes yet.</p>
+    {% endif %}
+</div>
+{% endblock %}
